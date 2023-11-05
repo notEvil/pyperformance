@@ -249,8 +249,9 @@ def _prep_cmd(python, script, opts, runid, on_set_envvar=None):
     set_envvar('PYPERFORMANCE_RUNID', str(runid))
 
     # Build argv.
+    import pathlib
     argv = [
-        python, '-u', script,
+        python, str(pathlib.Path(__file__).parent / "_line_profile.py"), script,
         *(opts or ()),
     ]
 

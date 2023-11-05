@@ -169,6 +169,37 @@ class VenvForBenchmarks(_venv.VirtualEnvironment):
         # Display the pip version
         _pip.run_pip('--version', python=self.python, env=self._env)
 
+        import subprocess
+
+        _v_ = [self.python, "-m", "pip", "install", os.environ["_LINE_PROFILER"]]
+        assert subprocess.Popen(_v_).wait() == 0
+
+        # force kernprof to stderr
+        _v_ = (
+            "import importlib.util as i_util;"
+            ' print(i_util.find_spec("kernprof").origin)'
+        )
+        process = subprocess.Popen([self.python, "-c", _v_], stdout=subprocess.PIPE)
+
+        kernprof_path = process.stdout.read().decode().strip()
+        assert process.wait() == 0
+
+        with open(kernprof_path, "r") as file:
+            kernprof_string = file.read()
+
+        with open(kernprof_path, "w") as file:
+            file.write("""
+def _(print):
+    import sys
+    def _print(*args, file=sys.stderr, **kwargs):
+        return print(*args, file=file, **kwargs)
+    return _print
+print = _(print)
+
+"""[1:-1])
+            file.write(kernprof_string)
+        #
+
         return self
 
     @classmethod
